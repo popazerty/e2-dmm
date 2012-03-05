@@ -2,12 +2,15 @@ AM_CPPFLAGS = \
 	-I$(top_srcdir) \
 	-I$(top_srcdir)/include \
 	-include Python.h \
-	-include $(top_builddir)/enigma2_config.h
+	-include $(top_builddir)/enigma2_config.h \
+	-I$(top_srcdir)/../../cdk/graphlcd-base
 
 AM_CXXFLAGS = \
 	$(LIBSDL_CFLAGS)
 
 bin_PROGRAMS = enigma2
+
+installdir = $(targetprefix)/usr/local/bin
 
 enigma2_SOURCES = \
 	bsod.cpp \
@@ -48,10 +51,13 @@ enigma2_LDADD = \
 	@LIBXINE_LIBS@ \
 	@LIBXMLCCWRAP_LIBS@ \
 	@PTHREAD_LIBS@ \
-	@PYTHON_LDFLAGS@
+	@PYTHON_LDFLAGS@ \
+	-ldl -lpthread -lcrypt -lresolv -lrt -lmmeimage
 
 enigma2_LDFLAGS = -Wl,--export-dynamic
 
+enigma2_LDADD += -lglcddrivers -lglcdgraphics -lglcdskin
+ 
 if HAVE_GIT_DIR
 GIT_DIR = $(top_srcdir)/.git
 GIT = git --git-dir=$(GIT_DIR)

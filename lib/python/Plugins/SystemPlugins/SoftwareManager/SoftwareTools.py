@@ -1,5 +1,11 @@
 # -*- coding: iso-8859-1 -*-
-from enigma import eConsoleAppContainer,eTPM
+# -*- coding: iso-8859-1 -*-
+#--->
+#- from enigma import eConsoleAppContainer,eTPM
+#---<
+#+++>
+from enigma import eConsoleAppContainer
+#+++<
 from Components.Console import Console
 from Components.About import about
 from Components.DreamInfoHandler import DreamInfoHandler
@@ -13,48 +19,48 @@ import hashlib
 from time import time
 from os import urandom
 
-rootkey = ['\x9f', '|', '\xe4', 'G', '\xc9', '\xb4', '\xf4', '#', '&', '\xce', '\xb3', '\xfe', '\xda', '\xc9', 'U', '`', '\xd8', '\x8c', 's', 'o', '\x90', '\x9b', '\\', 'b', '\xc0', '\x89', '\xd1', '\x8c', '\x9e', 'J', 'T', '\xc5', 'X', '\xa1', '\xb8', '\x13', '5', 'E', '\x02', '\xc9', '\xb2', '\xe6', 't', '\x89', '\xde', '\xcd', '\x9d', '\x11', '\xdd', '\xc7', '\xf4', '\xe4', '\xe4', '\xbc', '\xdb', '\x9c', '\xea', '}', '\xad', '\xda', 't', 'r', '\x9b', '\xdc', '\xbc', '\x18', '3', '\xe7', '\xaf', '|', '\xae', '\x0c', '\xe3', '\xb5', '\x84', '\x8d', '\r', '\x8d', '\x9d', '2', '\xd0', '\xce', '\xd5', 'q', '\t', '\x84', 'c', '\xa8', ')', '\x99', '\xdc', '<', '"', 'x', '\xe8', '\x87', '\x8f', '\x02', ';', 'S', 'm', '\xd5', '\xf0', '\xa3', '_', '\xb7', 'T', '\t', '\xde', '\xa7', '\xf1', '\xc9', '\xae', '\x8a', '\xd7', '\xd2', '\xcf', '\xb2', '.', '\x13', '\xfb', '\xac', 'j', '\xdf', '\xb1', '\x1d', ':', '?']
-
-def bin2long(s):
-	return reduce( lambda x,y:(x<<8L)+y, map(ord, s))
-
-def long2bin(l):
-	res = ""
-	for byte in range(128):
-		res += chr((l >> (1024 - (byte + 1) * 8)) & 0xff)
-	return res
-
-def rsa_pub1024(src, mod):
-	return long2bin(pow(bin2long(src), 65537, bin2long(mod)))
-	
-def decrypt_block(src, mod):
-	if len(src) != 128 and len(src) != 202:
-		return None
-	dest = rsa_pub1024(src[:128], mod)
-	hash = hashlib.sha1(dest[1:107])
-	if len(src) == 202:
-		hash.update(src[131:192])	
-	result = hash.digest()
-	if result == dest[107:127]:
-		return dest
-	return None
-
-def validate_cert(cert, key):
-	buf = decrypt_block(cert[8:], key) 
-	if buf is None:
-		return None
-	return buf[36:107] + cert[139:196]
-
-def read_random():
-	try:
-		xor = lambda a,b: ''.join(chr(ord(c)^ord(d)) for c,d in zip(a,b*100))
-		random = urandom(8)
-		x = str(time())[-8:]
-		result = xor(random, x)
-				
-		return result
-	except:
-		return None
+# rootkey = ['\x9f', '|', '\xe4', 'G', '\xc9', '\xb4', '\xf4', '#', '&', '\xce', '\xb3', '\xfe', '\xda', '\xc9', 'U', '`', '\xd8', '\x8c', 's', 'o', '\x90', '\x9b', '\\', 'b', '\xc0', '\x89', '\xd1', '\x8c', '\x9e', 'J', 'T', '\xc5', 'X', '\xa1', '\xb8', '\x13', '5', 'E', '\x02', '\xc9', '\xb2', '\xe6', 't', '\x89', '\xde', '\xcd', '\x9d', '\x11', '\xdd', '\xc7', '\xf4', '\xe4', '\xe4', '\xbc', '\xdb', '\x9c', '\xea', '}', '\xad', '\xda', 't', 'r', '\x9b', '\xdc', '\xbc', '\x18', '3', '\xe7', '\xaf', '|', '\xae', '\x0c', '\xe3', '\xb5', '\x84', '\x8d', '\r', '\x8d', '\x9d', '2', '\xd0', '\xce', '\xd5', 'q', '\t', '\x84', 'c', '\xa8', ')', '\x99', '\xdc', '<', '"', 'x', '\xe8', '\x87', '\x8f', '\x02', ';', 'S', 'm', '\xd5', '\xf0', '\xa3', '_', '\xb7', 'T', '\t', '\xde', '\xa7', '\xf1', '\xc9', '\xae', '\x8a', '\xd7', '\xd2', '\xcf', '\xb2', '.', '\x13', '\xfb', '\xac', 'j', '\xdf', '\xb1', '\x1d', ':', '?']
+# 
+# def bin2long(s):
+# 	return reduce( lambda x,y:(x<<8L)+y, map(ord, s))
+# 
+# def long2bin(l):
+# 	res = ""
+# 	for byte in range(128):
+# 		res += chr((l >> (1024 - (byte + 1) * 8)) & 0xff)
+# 	return res
+# 
+# def rsa_pub1024(src, mod):
+# 	return long2bin(pow(bin2long(src), 65537, bin2long(mod)))
+# 	
+# def decrypt_block(src, mod):
+# 	if len(src) != 128 and len(src) != 202:
+# 		return None
+# 	dest = rsa_pub1024(src[:128], mod)
+# 	hash = hashlib.sha1(dest[1:107])
+# 	if len(src) == 202:
+# 		hash.update(src[131:192])	
+# 	result = hash.digest()
+# 	if result == dest[107:127]:
+# 		return dest
+# 	return None
+# 
+# def validate_cert(cert, key):
+# 	buf = decrypt_block(cert[8:], key) 
+# 	if buf is None:
+# 		return None
+# 	return buf[36:107] + cert[139:196]
+# 
+# def read_random():
+# 	try:
+# 		xor = lambda a,b: ''.join(chr(ord(c)^ord(d)) for c,d in zip(a,b*100))
+# 		random = urandom(8)
+# 		x = str(time())[-8:]
+# 		result = xor(random, x)
+# 				
+# 		return result
+# 	except:
+# 		return None
 
 class SoftwareTools(DreamInfoHandler):
 	lastDownloadDate = None
@@ -104,26 +110,31 @@ class SoftwareTools(DreamInfoHandler):
 
 	def getUpdates(self, callback = None):
 		if self.lastDownloadDate is None:
-			if  self.hardware_info.device_name != "dm7025":
-				etpm = eTPM()
-				l2cert = etpm.getCert(eTPM.TPMD_DT_LEVEL2_CERT)
-				if l2cert is None:
-					return
-				l2key = validate_cert(l2cert, rootkey)
-				if l2key is None:
-					return
-				l3cert = etpm.getCert(eTPM.TPMD_DT_LEVEL3_CERT)
-				if l3cert is None:
-					return
-				l3key = validate_cert(l3cert, l2key)
-				if l3key is None:
-					return
-				rnd = read_random()
-				if rnd is None:
-					return
-				val = etpm.challenge(rnd)
-				result = decrypt_block(val, l3key)
-			if self.hardware_info.device_name == "dm7025" or result[80:88] == rnd:
+#--->
+#- 			if  self.hardware_info.device_name != "dm7025":
+#- 				etpm = eTPM()
+#- 				l2cert = etpm.getCert(eTPM.TPMD_DT_LEVEL2_CERT)
+#- 				if l2cert is None:
+#- 					return
+#- 				l2key = validate_cert(l2cert, rootkey)
+#- 				if l2key is None:
+#- 					return
+#- 				l3cert = etpm.getCert(eTPM.TPMD_DT_LEVEL3_CERT)
+#- 				if l3cert is None:
+#- 					return
+#- 				l3key = validate_cert(l3cert, l2key)
+#- 				if l3key is None:
+#- 					return
+#- 				rnd = read_random()
+#- 				if rnd is None:
+#- 					return
+#- 				val = etpm.challenge(rnd)
+#- 				result = decrypt_block(val, l3key)
+#- 			if self.hardware_info.device_name == "dm7025" or result[80:88] == rnd:
+#---<
+#+++>
+			if True:
+#+++<
 				if self.NetworkConnectionAvailable == True:
 					self.lastDownloadDate = time()
 					if self.list_updating is False and callback is None:
@@ -162,26 +173,31 @@ class SoftwareTools(DreamInfoHandler):
 					self.NotifierCallback = callback
 			else:
 				if self.list_updating and callback is not None:
-					if  self.hardware_info.device_name != "dm7025":
-						etpm = eTPM()
-						l2cert = etpm.getCert(eTPM.TPMD_DT_LEVEL2_CERT)
-						if l2cert is None:
-							return
-						l2key = validate_cert(l2cert, rootkey)
-						if l2key is None:
-							return
-						l3cert = etpm.getCert(eTPM.TPMD_DT_LEVEL3_CERT)
-						if l3cert is None:
-							return
-						l3key = validate_cert(l3cert, l2key)
-						if l3key is None:
-							return
-						rnd = read_random()
-						if rnd is None:
-							return
-						val = etpm.challenge(rnd)
-						result = decrypt_block(val, l3key)
-					if self.hardware_info.device_name == "dm7025" or result[80:88] == rnd:
+#--->
+#- 					if  self.hardware_info.device_name != "dm7025":
+#- 						etpm = eTPM()
+#- 						l2cert = etpm.getCert(eTPM.TPMD_DT_LEVEL2_CERT)
+#- 						if l2cert is None:
+#- 							return
+#- 						l2key = validate_cert(l2cert, rootkey)
+#- 						if l2key is None:
+#- 							return
+#- 						l3cert = etpm.getCert(eTPM.TPMD_DT_LEVEL3_CERT)
+#- 						if l3cert is None:
+#- 							return
+#- 						l3key = validate_cert(l3cert, l2key)
+#- 						if l3key is None:
+#- 							return
+#- 						rnd = read_random()
+#- 						if rnd is None:
+#- 							return
+#- 						val = etpm.challenge(rnd)
+#- 						result = decrypt_block(val, l3key)
+#- 					if self.hardware_info.device_name == "dm7025" or result[80:88] == rnd:
+#---<
+#+++>
+					if True:
+#+++<
 						self.NotifierCallback = callback
 						self.startIpkgListAvailable()
 				else:	

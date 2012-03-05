@@ -34,6 +34,26 @@ PKG_CHECK_MODULES(BASE, [freetype2 fribidi gstreamer-0.10 gstreamer-pbutils-0.10
 PKG_CHECK_MODULES(LIBDDVD, libdreamdvd, HAVE_LIBDDVD="yes", HAVE_LIBDDVD="no")
 AM_CONDITIONAL(HAVE_LIBDDVD, test "$HAVE_LIBDDVD" = "yes")
 
+AC_ARG_ENABLE([tf7700],
+        [AS_HELP_STRING(--enable-tf7700,    enable topfield tf7700 stuff)],
+#	AC_MSG_ERROR([bad value I${enableval}I for --enable-tf7700]))
+        [case "${enableval}" in
+                yes) enable_tf7700=true ;;
+                no) enable_tf7700=false ;;
+                *) AC_MSG_ERROR([bad value ${enableval} for --enable-tf7700]) ;;
+        esac])
+AM_CONDITIONAL([ENABLE_TF7700], [test x$enable_tf7700 = xtrue])
+
+AC_ARG_ENABLE([cuberevo],
+        [AS_HELP_STRING(--enable-cuberevo,    enable cuberevo stuff)],
+#	AC_MSG_ERROR([bad value I${enableval}I for --enable-cuberevo]))
+        [case "${enableval}" in
+                yes) enable_cuberevo=true ;;
+                no) enable_cuberevo=false ;;
+                *) AC_MSG_ERROR([bad value ${enableval} for --enable-cuberevo]) ;;
+        esac])
+AM_CONDITIONAL([ENABLE_CUBEREVO], [test x$enable_cuberevo = xtrue])
+
 AC_CHECK_LIB([dl], [dlopen], [LIBDL_LIBS="-ldl"], [AC_MSG_ERROR([Could not find libdl])])
 AC_SUBST(LIBDL_LIBS)
 AC_CHECK_LIB([jpeg], [jpeg_set_defaults], [LIBJPEG_LIBS="-ljpeg"], [AC_MSG_ERROR([Could not find libjpeg])])
@@ -135,16 +155,8 @@ lib/python/Components/Renderer/Makefile
 lib/python/Components/Sources/Makefile
 lib/python/Screens/Makefile
 lib/python/Plugins/Makefile
-lib/python/Plugins/DemoPlugins/Makefile
-lib/python/Plugins/DemoPlugins/TPMDemo/Makefile
-lib/python/Plugins/DemoPlugins/TestPlugin/Makefile
 lib/python/Plugins/Extensions/CutListEditor/Makefile
 lib/python/Plugins/Extensions/CutListEditor/meta/Makefile
-lib/python/Plugins/Extensions/DVDBurn/Makefile
-lib/python/Plugins/Extensions/DVDBurn/meta/Makefile
-lib/python/Plugins/Extensions/DVDPlayer/Makefile
-lib/python/Plugins/Extensions/DVDPlayer/meta/Makefile
-lib/python/Plugins/Extensions/DVDPlayer/src/Makefile
 lib/python/Plugins/Extensions/GraphMultiEPG/Makefile
 lib/python/Plugins/Extensions/GraphMultiEPG/meta/Makefile
 lib/python/Plugins/Extensions/Makefile
@@ -152,21 +164,16 @@ lib/python/Plugins/Extensions/MediaPlayer/Makefile
 lib/python/Plugins/Extensions/MediaPlayer/meta/Makefile
 lib/python/Plugins/Extensions/MediaScanner/Makefile
 lib/python/Plugins/Extensions/MediaScanner/meta/Makefile
-lib/python/Plugins/Extensions/Modem/Makefile
 lib/python/Plugins/Extensions/PicturePlayer/Makefile
 lib/python/Plugins/Extensions/PicturePlayer/meta/Makefile
 lib/python/Plugins/Extensions/PicturePlayer/data/Makefile
 lib/python/Plugins/Extensions/SocketMMI/Makefile
 lib/python/Plugins/Extensions/SocketMMI/meta/Makefile
 lib/python/Plugins/Extensions/SocketMMI/src/Makefile
-lib/python/Plugins/Extensions/TuxboxPlugins/Makefile
-lib/python/Plugins/Extensions/TuxboxPlugins/meta/Makefile
 lib/python/Plugins/SystemPlugins/CleanupWizard/Makefile
 lib/python/Plugins/SystemPlugins/CleanupWizard/meta/Makefile
 lib/python/Plugins/SystemPlugins/CommonInterfaceAssignment/Makefile
 lib/python/Plugins/SystemPlugins/CommonInterfaceAssignment/meta/Makefile
-lib/python/Plugins/SystemPlugins/CrashlogAutoSubmit/Makefile
-lib/python/Plugins/SystemPlugins/CrashlogAutoSubmit/meta/Makefile
 lib/python/Plugins/SystemPlugins/DefaultServicesScanner/Makefile
 lib/python/Plugins/SystemPlugins/DefaultServicesScanner/meta/Makefile
 lib/python/Plugins/SystemPlugins/DiseqcTester/Makefile
@@ -200,6 +207,12 @@ lib/python/Plugins/SystemPlugins/Videomode/Makefile
 lib/python/Plugins/SystemPlugins/Videomode/meta/Makefile
 lib/python/Plugins/SystemPlugins/WirelessLan/Makefile
 lib/python/Plugins/SystemPlugins/WirelessLan/meta/Makefile
+lib/python/Plugins/Extensions/TopfieldVFD/Makefile
+lib/python/Plugins/Extensions/CuberevoVFD/Makefile
+lib/python/Plugins/SystemPlugins/Tuxtxt/Makefile
+lib/python/Plugins/SystemPlugins/Tuxtxt/tuxtxt/Makefile
+lib/python/Plugins/SystemPlugins/VFD-Icons/Makefile 
+lib/python/Plugins/SystemPlugins/VFD-Icons/meta/Makefile
 lib/python/Tools/Makefile
 lib/service/Makefile
 lib/components/Makefile

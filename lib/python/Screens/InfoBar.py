@@ -6,7 +6,12 @@ from Screens.MovieSelection import MovieSelection
 from Screen import Screen
 
 profile("LOAD:enigma")
-from enigma import iPlayableService
+#--->
+#-from enigma import iPlayableService
+#---<
+#+++>
+from enigma import iServiceInformation, iPlayableService 
+#+++<
 
 profile("LOAD:InfoBarGenerics")
 from Screens.InfoBarGenerics import InfoBarShowHide, \
@@ -45,6 +50,11 @@ class InfoBar(InfoBarBase, InfoBarShowHide,
 				"showMovies": (self.showMovies, _("Play recorded movies...")),
 				"showRadio": (self.showRadio, _("Show the radio player...")),
 				"showTv": (self.showTv, _("Show the tv player...")),
+#+++>
+				"toogleTvRadio": (self.toogleTvRadio, _("toggels betwenn tv and radio...")), 
+				"volumeUp": (self._volUp, _("...")), 
+				"volumeDown": (self._volDown, _("...")), 
+#+++<
 			}, prio=2)
 		
 		self.allowPiP = True
@@ -71,6 +81,41 @@ class InfoBar(InfoBarBase, InfoBarShowHide,
 		assert InfoBar.instance is None, "class InfoBar is a singleton class and just one instance of this class is allowed!"
 		InfoBar.instance = self
 
+#+++>
+		# I know that this is not nice but i dont know how to directly access VolumneControl
+		from Screens.Volume import Volume
+		self.volumeDialog = session.instantiateDialog(Volume)
+		from enigma import eTimer
+		self.hideVolTimer = eTimer()
+		self.hideVolTimer.callback.append(self.volHide)
+		from Components.config import config, ConfigSubsection, ConfigInteger
+		config.audio = ConfigSubsection()
+		config.audio.volume = ConfigInteger(default = 100, limits = (0, 100))
+		
+	def volHide(self):
+		self.volumeDialog.hide()
+
+	def _volUp(self):
+		print "_volUp"
+		from enigma import eDVBVolumecontrol
+		eDVBVolumecontrol.getInstance().volumeUp()
+		self.volumeDialog.setValue(eDVBVolumecontrol.getInstance().getVolume())
+		self.volumeDialog.show()
+		self.hideVolTimer.start(3000, True)
+		config.audio.volume.value = eDVBVolumecontrol.getInstance().getVolume()
+		config.audio.volume.save()
+
+	def _volDown(self):
+		print "_volDown"
+		from enigma import eDVBVolumecontrol
+		eDVBVolumecontrol.getInstance().volumeDown()
+		self.volumeDialog.setValue(eDVBVolumecontrol.getInstance().getVolume())
+		self.volumeDialog.show()
+		self.hideVolTimer.start(3000, True)
+		config.audio.volume.value = eDVBVolumecontrol.getInstance().getVolume()
+		config.audio.volume.save()
+#+++<
+
 	def __onClose(self):
 		InfoBar.instance = None
 
@@ -88,6 +133,24 @@ class InfoBar(InfoBarBase, InfoBarShowHide,
 	def __checkServiceStarted(self):
 		self.__serviceStarted(True)
 		self.onExecBegin.remove(self.__checkServiceStarted)
+
+#+++>
+	def toogleTvRadio(self): 
+		service = self.session.nav.getCurrentService() 
+		info = service.info() 
+		AudioPID = info.getInfo(iServiceInformation.sAudioPID) 
+		VideoPID = info.getInfo(iServiceInformation.sVideoPID) 
+
+		print "sAudioPID", AudioPID 
+		print "sVideoPID", VideoPID 
+               
+		if VideoPID == -1: 
+			print "radio->tv" 
+			self.showTv2() 
+		else: 
+			print "tv->radio" 
+			self.showRadio2() 
+#+++<
 
 	def serviceStarted(self):  #override from InfoBarShowHide
 		new = self.servicelist.newServicePlayed()
@@ -111,6 +174,19 @@ class InfoBar(InfoBarBase, InfoBarShowHide,
 			self.rds_display.hide() # in InfoBarRdsDecoder
 			from Screens.ChannelSelection import ChannelSelectionRadio
 			self.session.openWithCallback(self.ChannelSelectionRadioClosed, ChannelSelectionRadio, self)
+
+#+++>
+	def showTv2(self):
+		self.showTvChannelList(False)
+
+	def showRadio2(self):
+		if config.usage.e1like_radio_mode.value:
+			self.showRadioChannelList(False)
+ 		else:
+ 			self.rds_display.hide() # in InfoBarRdsDecoder
+ 			from Screens.ChannelSelection import ChannelSelectionRadio
+ 			self.session.openWithCallback(self.ChannelSelectionRadioClosed, ChannelSelectionRadio, self)
+#+++<
 
 	def ChannelSelectionRadioClosed(self, *arg):
 		self.rds_display.show()  # in InfoBarRdsDecoder
@@ -212,12 +288,22 @@ class MoviePlayer(InfoBarBase, InfoBarShowHide, \
 					return
 
 		if answer in ("quit", "quitanddeleteconfirmed"):
+#+++> 
+                        # make sure that playback is unpaused otherwise the  
+                        # player driver might stop working 
+                        self.setSeekState(self.SEEK_STATE_PLAY) 
+#+++<
 			self.close()
 		elif answer == "movielist":
 			ref = self.session.nav.getCurrentlyPlayingServiceReference()
 			self.returning = True
 			from Screens.MovieSelection import MovieSelection
 			self.session.openWithCallback(self.movieSelected, MovieSelection, ref)
+#+++> 
+                        # make sure that playback is unpaused otherwise the  
+                        # player driver might stop working 
+                        self.setSeekState(self.SEEK_STATE_PLAY) 
+#+++<
 			self.session.nav.stopService()
 		elif answer == "restart":
 			self.doSeek(0)

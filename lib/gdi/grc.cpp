@@ -4,6 +4,11 @@
 #include <lib/base/init.h>
 #include <lib/base/init_num.h>
 
+#if defined(__sh__)
+#include "include/shmE2.h"
+extern char *shm;
+#endif
+
 #ifndef SYNC_PAINT
 void *gRC::thread_wrapper(void *ptr)
 {
@@ -125,7 +130,12 @@ void *gRC::thread()
 				m_compositing->Release();
 			} else if(o.dc)
 			{
+#if defined(__sh__)
+				if(checkshmentry(shm, "stopGUI=") != 1)
+					o.dc->exec(&o);
+#else
 				o.dc->exec(&o);
+#endif
 				// o.dc is a gDC* filled with grabref... so we must release it here
 				o.dc->Release();
 			}
@@ -175,9 +185,19 @@ void *gRC::thread()
 
 				if (!idle)
 				{
+#if defined(__sh__)
+					if(checkshmentry(shm, "stopSpinner=") != 1)
+					{
+						if (!m_spinner_enabled)
+							eDebug("main thread is non-idle! display spinner!");
+						enableSpinner();
+					} else
+						disableSpinner();
+#else
 					if (!m_spinner_enabled)
 						eDebug("main thread is non-idle! display spinner!");
 					enableSpinner();
+#endif
 				} else
 					disableSpinner();
 			}

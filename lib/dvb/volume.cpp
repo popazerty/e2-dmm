@@ -29,7 +29,9 @@ eDVBVolumecontrol* eDVBVolumecontrol::getInstance()
 eDVBVolumecontrol::eDVBVolumecontrol()
 {
 	volumeUnMute();
+#if not defined (__sh__) // dont reset volume on start
 	setVolume(100, 100);
+#endif
 }
 
 int eDVBVolumecontrol::openMixer()

@@ -10,6 +10,11 @@
 #include <lib/base/init_num.h>
 #include <lib/base/eerror.h>
 
+#if defined(__sh__) // nits shm hack to behavior of e2 on the fly. here rc blocking
+#include "include/shmE2.h"
+extern char *shm;
+#endif
+
 /*
  *  note on the enigma input layer:
  *  the enigma input layer (rc*) supports n different devices which
@@ -64,6 +69,10 @@ void eRCShortDriver::keyPressed(int)
 	{
 		if (read(handle, &rccode, 2)!=2)
 			break;
+#if defined(__sh__) // nits shm hack to behavior of e2 on the fly. here rc blocking
+		if(checkshmentry(shm, "stopRC=") == 1)
+			continue;
+#endif
 		if (enabled && !input->islocked())
 			for (std::list<eRCDevice*>::iterator i(listeners.begin()); i!=listeners.end(); ++i)
 				(*i)->handleCode(rccode);
@@ -97,6 +106,10 @@ void eRCInputEventDriver::keyPressed(int)
 	{
 		if (read(handle, &ev, sizeof(struct input_event))!=sizeof(struct input_event))
 			break;
+#if defined(__sh__) // nits shm hack to behavior of e2 on the fly. here rc blocking
+		if(checkshmentry(shm, "stopRC=") == 1)
+			continue;
+#endif
 		if (enabled && !input->islocked())
 			for (std::list<eRCDevice*>::iterator i(listeners.begin()); i!=listeners.end(); ++i)
 				(*i)->handleCode((long)&ev);

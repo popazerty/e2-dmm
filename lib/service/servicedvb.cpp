@@ -537,6 +537,9 @@ eServiceFactoryDVB::eServiceFactoryDVB()
 	if (sc)
 	{
 		std::list<std::string> extensions;
+#if defined(__sh__) //Topfield original recording extension
+		extensions.push_back("rec");
+#endif
 		extensions.push_back("ts");
 		extensions.push_back("trp");
 		sc->addServiceFactory(eServiceFactoryDVB::id, this, extensions);
@@ -1458,6 +1461,10 @@ RESULT eDVBServicePlay::setTrickmode(int trick)
 
 RESULT eDVBServicePlay::isCurrentlySeekable()
 {
+// __sh__: fix seekable problem with .ts files if .ts.meta not exists (see e2 git from 02.01.2010 10:54:57)
+#ifdef __sh__
+	return m_is_pvr || m_timeshift_active;
+#else
 	int ret = 0;
 	if (m_decoder)
 	{
@@ -1466,6 +1473,7 @@ RESULT eDVBServicePlay::isCurrentlySeekable()
 			ret &= ~2;
 	}
 	return ret;
+#endif
 }
 
 RESULT eDVBServicePlay::frontendInfo(ePtr<iFrontendInformation> &ptr)

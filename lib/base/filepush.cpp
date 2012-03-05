@@ -4,6 +4,21 @@
 #include <fcntl.h>
 #include <sys/ioctl.h>
 
+#if defined(__sh__) // this allows filesystem tasks to be prioritised
+#include <sys/vfs.h>
+
+#define USBDEVICE_SUPER_MAGIC 0x9fa2 
+#define EXT2_SUPER_MAGIC      0xEF53 
+#define EXT3_SUPER_MAGIC      0xEF53 
+#define SMB_SUPER_MAGIC       0x517B 
+#define NFS_SUPER_MAGIC       0x6969 
+#define MSDOS_SUPER_MAGIC     0x4d44            /* MD */
+#endif
+#if defined(__sh__) // nits shm hack to behavior of e2 on the fly
+#include "include/shmE2.h"
+extern char *shm;
+#endif
+
 #define PVR_COMMIT 1
 
 //FILE *f = fopen("/log.ts", "wb");
@@ -19,6 +34,15 @@ eFilePushThread::eFilePushThread(int io_prio_class, int io_prio_level, int block
 	flush();
 	enablePVRCommit(0);
 	CONNECT(m_messagepump.recv_msg, eFilePushThread::recvEvent);
+
+// vvv Initialize with 0, because otherwise playback may stop
+// (In case of playback eFilePushThread::start is not called)		
+#if defined(__sh__)
+	m_record_split_size = 0;
+	m_record_split_type = 0;
+#endif
+// ^^^ Initialize with 0, because otherwise playback may stop
+
 }
 
 static void signal_handler(int x)
@@ -37,6 +61,11 @@ void eFilePushThread::thread()
 	
 	size_t written_since_last_sync = 0;
 
+#if defined(__sh__) // used for filesplitting
+	int file_count = 1;
+	unsigned long long total_bytes_written = 0;
+#endif
+
 	eDebug("FILEPUSH THREAD START");
 	
 		/* we set the signal to not restart syscalls, so we can detect our signal. */
@@ -47,7 +76,16 @@ void eFilePushThread::thread()
 	
 	hasStarted();
 
+#if defined(__sh__) // opens video device for the reverse playback workaround
+//Changes in this file are cause e2 doesnt tell the player to play reverse
+//No idea how this is handeld in dm drivers
+	int fd_video = open("/dev/dvb/adapter0/video0", O_RDONLY);
+#endif
 		/* m_stop must be evaluated after each syscall. */
+		
+// vvv Fix to ensure that event evtEOF is called at end of playbackl part 1/3
+	bool already_empty=false;
+// ^^^ Fix to ensure that event evtEOF is called at end of playbackl part 1/3
 	while (!m_stop)
 	{
 			/* first try flushing the bufptr */
@@ -124,6 +162,37 @@ void eFilePushThread::thread()
 				dest_pos -= toflush;
 				posix_fadvise(m_fd_dest, dest_pos, toflush, POSIX_FADV_DONTNEED);
 				written_since_last_sync -= toflush;
+#if defined(__sh__) // splits files
+				//split file only after sync
+				if (m_record_split_size)
+				{
+					total_bytes_written += toflush;
+					if(total_bytes_written > m_record_split_size)
+					{
+						char filename[255];
+
+						close(m_fd_dest);
+						total_bytes_written = 0;
+						written_since_last_sync = 0;
+
+						if(m_record_split_type)
+							snprintf(filename, 255, "%s.%03d.ts", m_filename, file_count++);
+						else
+							snprintf(filename, 255, "%s.%03d", m_filename, file_count++);
+
+						eDebug("split record file - Recording to %s...", filename);
+
+						m_fd_dest = open(filename, m_flags, 0644);
+						if (m_fd_dest == -1)
+						{
+							eDebug("split record file - can't open recording file!");
+						}
+
+						/* turn off kernel caching strategies */
+						posix_fadvise(m_fd_dest, 0, 0, POSIX_FADV_RANDOM);
+					}
+				}
+#endif
 			}
 
 //			printf("FILEPUSH: wrote %d bytes\n", w);
@@ -135,6 +204,19 @@ void eFilePushThread::thread()
 			
 		if (m_sg && !current_span_remaining)
 		{
+#if defined (__sh__) // tells the player to play in reverse
+#define VIDEO_DISCONTINUITY                   _IO('o',  84)
+#define DVB_DISCONTINUITY_SKIP                0x01
+#define DVB_DISCONTINUITY_CONTINUOUS_REVERSE  0x02
+			if((m_sg->getSkipMode() != 0))
+			{
+				// inform the player about the jump in the stream data
+				// this only works if the video device allows the discontinuity ioctl in read-only mode (patched)
+				int param = DVB_DISCONTINUITY_SKIP; // | DVB_DISCONTINUITY_CONTINUOUS_REVERSE;
+				int rc = ioctl(fd_video, VIDEO_DISCONTINUITY, (void*)param);
+				//eDebug("VIDEO_DISCONTINUITY (fd %d, rc %d)", fd_video, rc);
+			}
+#endif
 			m_sg->getNextSourceSpan(m_current_position, bytes_read, current_span_offset, current_span_remaining);
 			ASSERT(!(current_span_remaining % m_blocksize));
 			m_current_position = current_span_offset;
@@ -187,7 +269,17 @@ void eFilePushThread::thread()
 				{
 					case 0:
 						eDebug("wait for driver eof timeout");
-						continue;
+// vvv Fix to ensure that event evtEOF is called at end of playbackl part 2/3
+						if(already_empty)
+						{
+							break;
+						}
+						else
+						{
+							already_empty=true;
+							continue;
+						}
+// ^^^ Fix to ensure that event evtEOF is called at end of playbackl	part 2/3
 					case 1:
 						eDebug("wait for driver eof ok");
 						break;
@@ -212,6 +304,9 @@ void eFilePushThread::thread()
 			break;
 		} else
 		{
+// vvv Fix to ensure that event evtEOF is called at end of playbackl part 3/3
+			already_empty=false;
+// ^^^ Fix to ensure that event evtEOF is called at end of playbackl part 3/3
 			m_current_position += m_buf_end;
 			bytes_read += m_buf_end;
 			if (m_sg)
@@ -219,10 +314,75 @@ void eFilePushThread::thread()
 		}
 //		printf("FILEPUSH: read %d bytes\n", m_buf_end);
 	}
-	fdatasync(m_fd_dest);
+	// Do NOT call "fdatasync(m_fd_dest);" here because on some systems it doesn't return
+	// and freezes the whole box.
+	// Calling this function here is not that important, anyway, because the initiator closes
+	// m_fd_dest immediatedly when the filepush thread has been stopped.
+	// Original code has been:	
+	// fdatasync(m_fd_dest);
+
+#if defined(__sh__) // closes video device for the reverse playback workaround
+	close(fd_video);
+#endif
 
 	eDebug("FILEPUSH THREAD STOP");
 }
+
+#if defined(__sh__) // here we prioritise and split the files
+void eFilePushThread::start(int fd, int fd_dest, const char *filename)
+{
+	struct statfs sbuf;
+	eRawFile *f = new eRawFile();
+	ePtr<iTsSource> source = f;
+	f->setfd(fd);
+	start(source, fd_dest);
+	m_record_split_size = 0;
+	m_record_split_type = 0;
+	m_flags = O_WRONLY|O_CREAT|O_LARGEFILE;
+
+//FIXME: (schischu) This should be changed, 
+//such values should come for e2 and not from an external source
+	char record_split_size[3] = "";
+	getshmentry(shm, "record_split_size=", record_split_size, 3);
+	m_record_split_size = atoi(record_split_size);
+	m_record_split_size = m_record_split_size * 1000 * 1000 * 1000;
+	
+	char record_split_type[2] = "";
+	getshmentry(shm, "record_split_type=", record_split_type, 2);
+	m_record_split_type = atoi(record_split_type);
+
+	m_filename[0] = NULL;
+	strcpy(m_filename, filename);
+
+	if (statfs(m_filename, &sbuf) < 0)
+	{
+		eDebug("split record file - can't get fs type assuming none NFS!");
+	} else
+	{
+		if (sbuf.f_type == EXT3_SUPER_MAGIC)
+			eDebug("split record file - Ext2/3/4 Filesystem\n");
+		else
+		if (sbuf.f_type == NFS_SUPER_MAGIC)
+		{
+			eDebug("split record file - NFS Filesystem; add O_DIRECT to flags\n");
+			m_flags |= O_DIRECT;
+		}
+		else
+		if (sbuf.f_type == USBDEVICE_SUPER_MAGIC)
+			eDebug("split record file - USB Device\n");
+		else
+		if (sbuf.f_type == SMB_SUPER_MAGIC)
+			eDebug("split record file - SMBs Device\n");
+		else
+		if (sbuf.f_type == MSDOS_SUPER_MAGIC)
+			eDebug("split record file - MSDOS Device\n");
+	}
+
+	resume();
+}
+#endif
+
+
 
 void eFilePushThread::start(int fd, int fd_dest)
 {

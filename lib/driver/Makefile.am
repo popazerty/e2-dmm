@@ -16,7 +16,8 @@ libenigma_driver_a_SOURCES = \
 	rc.cpp \
 	rcconsole.cpp \
 	rcinput.cpp \
-	rfmod.cpp
+	rfmod.cpp \
+	vfd.cpp
 
 driverincludedir = $(pkgincludedir)/lib/driver
 driverinclude_HEADERS = \

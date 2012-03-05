@@ -2,7 +2,8 @@ AM_CPPFLAGS = \
 	-I$(top_srcdir) \
 	-I$(top_srcdir)/include \
 	-include Python.h \
-	-include $(top_builddir)/enigma2_config.h
+	-include $(top_builddir)/enigma2_config.h \
+	-I$(top_srcdir)/../../cdk/graphlcd-base
 
 SUBDIRS = Components Tools Screens Plugins
 
@@ -30,7 +31,7 @@ EXTRA_DIST = \
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/enigma_python.Pcpp@am__quote@
 
 .i.cpp:
-	$(AM_V_GEN)$(SWIG) $(AX_SWIG_PYTHON_OPT) -MT $@ -MD -MF $(DEPDIR)/$*.Tpo -I$(top_srcdir) -O -nortti -nothreads -o $@ $<
+	$(AM_V_GEN)$(SWIG) $(AX_SWIG_PYTHON_OPT) -MT $@ -MD -MF $(DEPDIR)/$*.Tpo -I$(top_srcdir) -D__sh__ -O -nortti -nothreads -o $@ $<
 	$(AM_V_at)mv -f $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Pcpp
 	$(AM_V_at)$(PYTHON) $(srcdir)/enigma_py_patcher.py
 

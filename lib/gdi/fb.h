@@ -4,10 +4,18 @@
 #include <lib/base/eerror.h>
 #include <linux/fb.h>
 
+#if defined(__sh__) 
+	#include <linux/stmfb.h> 
+#endif
 class fbClass
 {
 	int fd;
 	unsigned int xRes, yRes, stride, bpp;
+#if defined(__sh__) 
+	unsigned int xResFB, yResFB; 
+	int topDiff, leftDiff, rightDiff, bottomDiff; 
+	unsigned char *lfb_direct;
+#endif
 	int available;
 	struct fb_var_screeninfo screeninfo, oldscreen;
 	fb_cmap cmap;
@@ -48,10 +56,23 @@ public:
 	int PutCMAP();
 #endif
 	static fbClass *getInstance();
+#if defined(__sh__)  
+//---> "hack" for libeplayer3 fb access
+        int getFD() { return fd; }
+        unsigned char * getLFB_Direct() { return lfb_direct; }
+        int getScreenResX() { return xRes; }
+        int getScreenResY() { return yRes; }
+//---<
+#endif  
 
 	int lock();
 	void unlock();
 	int islocked() { return locked; }
+#if defined(__sh__) 
+	void clearFBblit();
+	int getFBdiff(int ret);
+	void setFBdiff(int top, int right, int left, int bottom);
+#endif
 };
 
 #endif

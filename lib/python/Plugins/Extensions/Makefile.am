@@ -1,9 +1,13 @@
 installdir = $(pkglibdir)/python/Plugins/Extensions
 
-SUBDIRS = TuxboxPlugins CutListEditor PicturePlayer MediaScanner MediaPlayer GraphMultiEPG SocketMMI DVDBurn Modem
+SUBDIRS = CutListEditor PicturePlayer MediaScanner MediaPlayer GraphMultiEPG SocketMMI 
+ 
+if ENABLE_TF7700
+SUBDIRS += TopfieldVFD
+endif
 
-if HAVE_LIBDDVD
-SUBDIRS += DVDPlayer
+if ENABLE_CUBEREVO
+SUBDIRS += CuberevoVFD
 endif
 
 install_PYTHON =	\

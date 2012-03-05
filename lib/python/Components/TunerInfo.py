@@ -60,8 +60,17 @@ class TunerInfo(GUIComponent):
 			value = self.getValue(self.LOCK)
 
 		if self.type == self.SNR_DB:
-			if value != 0x12345678:
-				self.setText("%3.02f dB" % (value / 100.0))
+#--->   CAUSE OF CRASH!
+#-			if value != 0x12345678:
+#-				self.setText("%3.02f dB" % (value / 100.0))
+#---<
+#+++>   CAUSE OF CRASH!
+			if value is not None:
+				if value != 0x12345678:
+					self.setText("%3.02f dB" % (value / 100.0))
+				else:
+					self.setText("")
+#+++>   CAUSE OF CRASH!		
 			else:
 				self.setText("")
 		elif self.type == self.SNR_PERCENTAGE or self.type == self.AGC_PERCENTAGE:

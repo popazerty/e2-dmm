@@ -548,6 +548,9 @@ RESULT eDVBTSRecorder::start()
 		eDebug("FAILED to open dvr (%s) in ts recoder (%m)", filename);
 		return -3;
 	}
+#if defined(__sh__) // we need to set the correct buffer size for some reason ;-)
+	setBufferSize(256*1024);
+#endif
 #else
 	snprintf(filename, 128, "/dev/dvb/adapter%d/demux%d", m_demux->adapter, m_demux->demux);
 
@@ -588,7 +591,14 @@ RESULT eDVBTSRecorder::start()
 	if (m_target_filename != "")
 		m_thread->startSaveMetaInformation(m_target_filename);
 	
+#if defined(__sh__) // this calls our own filepushthread which supports prioritising and splitting
+	if (m_target_filename != "")
+		m_thread->start(m_source_fd, m_target_fd, m_target_filename.c_str());
+	else
+		m_thread->start(m_source_fd, m_target_fd);
+#else
 	m_thread->start(m_source_fd, m_target_fd);
+#endif
 	m_running = 1;
 
 	while (i != m_pids.end()) {

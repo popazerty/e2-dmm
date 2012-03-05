@@ -169,6 +169,50 @@ public:
 				if (!ref) \
 					delete this; \
 			}
+	#elif defined(__sh__) // refcounting asm code for sh4 cpus
+		#define DECLARE_REF(x)                  \
+			private: oRefCount ref;         \
+			public: void AddRef();          \
+					void Release();
+		#define DEFINE_REF(c) \
+			void c::AddRef() \
+			{ \
+				int tmp; \
+				volatile int* v = &(ref.count);\
+       				asm volatile( \
+                		"   .align 2              \n\t" \
+                		"   mova    1f,   r0      \n\t" \
+                		"   mov    r15,   r1      \n\t" \
+                		"   mov    #-6,   r15     \n\t" \
+                		"   mov.l  @%1,   %0      \n\t" \
+                		"   add     #1,   %0      \n\t" \
+                		"   mov.l   %0,   @%1     \n\t" \
+                		"1: mov     r1,   r15     \n\t" \
+                		: "=&r" (tmp),      \
+                  		  "+r"  (v) \
+				:                   \
+                		: "memory" , "r0", "r1" ); \
+			} \
+			void c::Release() \
+			{ \
+				int tmp; \
+				volatile int* v = &(ref.count);\
+			        asm volatile( \
+                		"   .align 2              \n\t" \
+		                "   mova    1f,   r0      \n\t" \
+                		"   mov    r15,   r1      \n\t" \
+ 		                "   mov    #-6,   r15     \n\t" \
+		                "   mov.l  @%1,   %0      \n\t" \
+		                "   add    #-1,   %0      \n\t" \
+		                "   mov.l   %0,   @%1     \n\t" \
+		                "1: mov     r1,   r15     \n\t" \
+		                : "=&r" (tmp),      \
+		                  "+r"  (v) \
+				:                   \
+		                : "memory" , "r0", "r1" ); \
+				if (!ref) \
+					delete this; \
+			}
 	#else
 		#warning use non optimized implementation of refcounting.
 		#define DECLARE_REF(x) 			\

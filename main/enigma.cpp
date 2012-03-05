@@ -27,6 +27,14 @@
 #include <lib/python/connections.h>
 #include <lib/python/python.h>
 
+#if defined(__sh__) // vfd class
+#include <lib/driver/vfd.h>  
+
+#endif  
+#if defined(__sh__) // nits shm hack to behavior of e2 on the fly
+#include "include/shmE2.h"
+char *shm = NULL;
+#endif 
 #include "bsod.h"
 #include "version_info.h"
 
@@ -124,6 +132,11 @@ int exit_code;
 
 int main(int argc, char **argv)
 {
+#if defined(__sh__) // nits shm hack to behavior of e2 on the fly
+        shm = findshm();
+        if(shm == NULL)
+            shm = createshm();
+#endif
 #ifdef MEMLEAK_CHECK
 	atexit(DumpUnfreed);
 #endif
@@ -165,7 +178,12 @@ int main(int argc, char **argv)
 	eWidgetDesktop dsk_lcd(my_lcd_dc->size());
 
 	dsk.setStyleID(0);
-	dsk_lcd.setStyleID(my_lcd_dc->size().width() == 96 ? 2 : 1);
+
+#ifndef __sh__
+  	dsk_lcd.setStyleID(my_lcd_dc->size().width() == 96 ? 2 : 1);
+#else
+  	dsk_lcd.setStyleID(my_lcd_dc->size().width() == 320 ? 1 : 2);
+#endif
 
 /*	if (double_buffer)
 	{
@@ -227,6 +245,12 @@ int main(int argc, char **argv)
 	gRC::getInstance()->setSpinnerDC(my_dc);
 
 	eRCInput::getInstance()->keyEvent.connect(slot(keyEvent));
+
+#if defined(__sh__)  // initialise the vfd class
+	evfd * vfd = new evfd;  
+	vfd->init();  
+	delete vfd;  
+#endif  
 	
 	printf("executing main\n");
 	

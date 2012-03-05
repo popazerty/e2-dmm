@@ -19,8 +19,11 @@
 #include <gst/pbutils/missing-plugins.h>
 #include <sys/stat.h>
 
+#if defined(__sh__)
+#define HTTP_TIMEOUT 60
+#else
 #define HTTP_TIMEOUT 10
-
+#endif
 // eServiceFactoryMP3
 
 eServiceFactoryMP3::eServiceFactoryMP3()
@@ -47,6 +50,20 @@ eServiceFactoryMP3::eServiceFactoryMP3()
 		extensions.push_back("mp4");
 		extensions.push_back("mov");
 		extensions.push_back("m4a");
+#if defined(__sh__)
+		extensions.push_back("mpeg");
+		extensions.push_back("m2ts");
+		extensions.push_back("trp");
+		extensions.push_back("vdr");
+		extensions.push_back("wma");
+		extensions.push_back("mts");
+		extensions.push_back("flv");
+		extensions.push_back("rar");
+		extensions.push_back("img");
+		extensions.push_back("iso");
+		extensions.push_back("ifo");
+		extensions.push_back("wmv");
+#endif
 		sc->addServiceFactory(eServiceFactoryMP3::id, this, extensions);
 	}
 
