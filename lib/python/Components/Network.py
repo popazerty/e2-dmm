@@ -632,7 +632,7 @@ class Network:
 					driverfiles = listdir(driverdir)
 					if os_path.realpath(driverdir).endswith('ath_pci'):
 						if len(driverfiles) >= 1:
-							self.wlanmodule = 'wext'
+							self.wlanmodule = 'madwifi'
 					if os_path.realpath(driverdir).endswith('rt73'):
 						if len(driverfiles) == 2 or len(driverfiles) == 5:
 							self.wlanmodule = 'wext'					

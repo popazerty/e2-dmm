@@ -390,7 +390,7 @@ def callFunction(iface):
 def configStrings(iface):
 	driver = iNetwork.detectWlanModule(iface)
 	ret = ""
-	if driver == 'wext' and config.plugins.wlan.essid.value == "hidden...":
+	if driver == 'madwifi' and config.plugins.wlan.essid.value == "hidden...":
 		ret += "\tpre-up iwconfig " + iface + " essid \"" + config.plugins.wlan.hiddenessid.value + "\" || true\n"
 	ret += "\tpre-up wpa_supplicant -i" + iface + " -c/etc/wpa_supplicant.conf -B -dd -D" + driver + " || true\n"
 	ret += "\tpre-down wpa_cli -i" + iface + " terminate || true\n"
