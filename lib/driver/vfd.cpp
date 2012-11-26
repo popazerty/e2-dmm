@@ -12,16 +12,14 @@
 #include <lib/base/eerror.h>
 #include <lib/driver/vfd.h>
 
-#ifdef PLATFORM_TF7700
-#include "../../misc/tools/tffpctl/frontpanel.h"
-#endif
-
 #define VFD_DEVICE "/dev/vfd"
 #define VFDICONDISPLAYONOFF	0xc0425a0a
 #define	VFDDISPLAYCHARS 	0xc0425a00
 #define VFDBRIGHTNESS           0xc0425a03
 //light on off
 #define VFDDISPLAYWRITEONOFF    0xc0425a05
+#define VFDDISPLAYCLR		0xc0425b00
+
 
 bool startloop_running = false;
 static bool icon_onoff[32];
@@ -36,15 +34,23 @@ int VFD_SCROLL = 1;
 char chars[64];
 char g_str[64];
 
-struct vfd_ioctl_data {
+struct vfd_ioctl_data
+{
 	unsigned char start;
 	unsigned char data[64];
 	unsigned char length;
 };
 
+#if defined(PLATFORM_SPARK) || defined(PLATFORM_SPARK7162)
+struct set_icon_s {
+	int icon_nr;
+	int on;
+};
+#endif
+
 #ifdef PLATFORM_OCTAGON1008
 	#define VFDLENGTH 8
-#elif defined (PLATFORM_FORTIS_HDBOX) || defined(PLATFORM_ATEVIO7500)
+#elif defined (PLATFORM_FORTIS_HDBOX) || defined(PLATFORM_ATEVIO7500) || defined(PLATFORM_SPARK7162) || defined(PLATFORM_SPARK)
 	#define VFDLENGTH 12
 #else
 	#define VFDLENGTH 16
@@ -122,7 +128,7 @@ void * start_loop (void *arg)
 	//ioctl(fpc, FRONTPANELSCROLLMODE, &scrollMode);
 	
 	// display string
-	char str[] = "        AR-P TEAM ENIGMA2";
+	char str[] = " Open AR-P TEAM ENIGMA2";
 	int length = strlen(str);
 	char dispData[MAX_CHARS + 1];
 	int offset = 0;
@@ -186,10 +192,10 @@ void * start_loop (void *arg)
 	evfd vfd;
 	blocked = true;
 	//vfd.vfd_clear_icons();
-	vfd.vfd_write_string("AR-P TEAM", true);
+	vfd.vfd_write_string("Open AR-P ENIGMA2", true);
 	//run 2 times through all icons 
 	for  (int vloop = 0; vloop < 128; vloop++) {
-#if !defined(PLATFORM_FORTIS_HDBOX) && !defined(PLATFORM_OCTAGON1008) && !defined(PLATFORM_ATEVIO7500) && !defined(PLATFORM_CUBEREVO) && !defined(PLATFORM_CUBEREVO_MINI) && !defined(PLATFORM_CUBEREVO_MINI2) && !defined(PLATFORM_CUBEREVO_MINI_FTA) && !defined(PLATFORM_CUBEREVO_250HD) && !defined(PLATFORM_CUBEREVO_2000HD) && !defined(PLATFORM_CUBEREVO_9500HD)
+#if !defined(PLATFORM_FORTIS_HDBOX) && !defined(PLATFORM_OCTAGON1008) && !defined(PLATFORM_ATEVIO7500) && !defined(PLATFORM_CUBEREVO) && !defined(PLATFORM_CUBEREVO_MINI) && !defined(PLATFORM_CUBEREVO_MINI2) && !defined(PLATFORM_CUBEREVO_MINI_FTA) && !defined(PLATFORM_CUBEREVO_250HD) && !defined(PLATFORM_CUBEREVO_2000HD) && !defined(PLATFORM_CUBEREVO_9500HD) && !defined(PLATFORM_SPARK7162) && !defined(PLATFORM_SPARK)
 		if (vloop%2 == 1) {
 			vfd.vfd_set_icon( (tvfd_icon) (((vloop%32)/2)%16), ICON_OFF, true);
 			//usleep(1000);
@@ -228,7 +234,7 @@ void * start_loop (void *arg)
 		usleep(75000);
 	}
 	vfd.vfd_set_brightness(7);
-#if !defined(PLATFORM_FORTIS_HDBOX) && !defined(PLATFORM_OCTAGON1008)	&& !defined(PLATFORM_ATEVIO7500) && !defined(PLATFORM_CUBEREVO) && !defined(PLATFORM_CUBEREVO_MINI) && !defined(PLATFORM_CUBEREVO_MINI2) && !defined(PLATFORM_CUBEREVO_MINI_FTA) && !defined(PLATFORM_CUBEREVO_250HD) && !defined(PLATFORM_CUBEREVO_2000HD) && !defined(PLATFORM_CUBEREVO_9500HD)
+#if !defined(PLATFORM_FORTIS_HDBOX) && !defined(PLATFORM_OCTAGON1008)	&& !defined(PLATFORM_ATEVIO7500) && !defined(PLATFORM_CUBEREVO) && !defined(PLATFORM_CUBEREVO_MINI) && !defined(PLATFORM_CUBEREVO_MINI2) && !defined(PLATFORM_CUBEREVO_MINI_FTA) && !defined(PLATFORM_CUBEREVO_250HD) && !defined(PLATFORM_CUBEREVO_2000HD) && !defined(PLATFORM_CUBEREVO_9500HD) && !defined(PLATFORM_SPARK7162) && !defined(PLATFORM_SPARK)
 	//set all blocked icons
 	for (int id = 0x10; id < 0x20; id++) {
 		vfd.vfd_set_icon((tvfd_icon)id, icon_onoff[id]);	
@@ -423,16 +429,24 @@ void evfd::vfd_set_icon(tvfd_icon id, bool onoff, bool force)
 	icon_onoff[id] = onoff;
 
 	if (!blocked || force) {
+#if defined(PLATFORM_SPARK) || defined(PLATFORM_SPARK7162)
+	    	struct set_icon_s data;
+#else
 		struct vfd_ioctl_data data;
-
+#endif
 		if (!startloop_running) {
+#if defined(PLATFORM_SPARK) || defined(PLATFORM_SPARK7162)
+		    	memset(&data, 0, sizeof(struct set_icon_s));			
+			data.icon_nr=id;
+			data.on = onoff;
+#else
 			memset(&data, 0, sizeof(struct vfd_ioctl_data));
 
 			data.start = 0x00;
     			data.data[0] = id;
     			data.data[4] = onoff;
     			data.length = 5;
-
+#endif
 			file_vfd = open (VFD_DEVICE, O_WRONLY);
     			ioctl(file_vfd, VFDICONDISPLAYONOFF, &data);
 			close (file_vfd);
