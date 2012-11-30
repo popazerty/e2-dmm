@@ -5,11 +5,7 @@
 
 #include <set>
 
-#if HAVE_DVB_API_VERSION < 3
-#define FREQUENCY Frequency
-#else
 #define FREQUENCY frequency
-#endif
 #include <lib/base/eerror.h>
 
 //#define SEC_DEBUG

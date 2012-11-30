@@ -2,8 +2,7 @@ AM_CPPFLAGS = \
 	-I$(top_srcdir) \
 	-I$(top_srcdir)/include \
 	-include Python.h \
-	-include $(top_builddir)/enigma2_config.h \
-	-I$(top_srcdir)/../../cdk/graphlcd-base
+	-include $(top_builddir)/enigma2_config.h
 
 AM_CXXFLAGS = \
 	$(LIBSDL_CFLAGS)
@@ -54,10 +53,17 @@ enigma2_LDADD = \
 	@PYTHON_LDFLAGS@ \
 	-ldl -lpthread -lcrypt -lresolv -lrt -lmmeimage
 
+if ENABLE_LIBEPLAYER3
+enigma2_LDADD += \
+	-leplayer3
+endif
+
 enigma2_LDFLAGS = -Wl,--export-dynamic
 
+if HAVE_GRAPHLCD
 enigma2_LDADD += -lglcddrivers -lglcdgraphics -lglcdskin
- 
+endif
+
 if HAVE_GIT_DIR
 GIT_DIR = $(top_srcdir)/.git
 GIT = git --git-dir=$(GIT_DIR)

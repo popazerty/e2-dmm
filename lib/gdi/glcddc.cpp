@@ -5,7 +5,7 @@
 
 gLCDDC *gLCDDC::instance;
 
-#ifdef __sh__
+#ifdef HAVE_GRAPHLCD
 static inline int time_after(struct timespec oldtime, uint32_t delta_ms)
 {
 	// calculate the oldtime + add on the delta
@@ -40,14 +40,14 @@ gLCDDC::gLCDDC()
 
 	m_pixmap = new gPixmap(&surface);
 
-#ifdef __sh__    
+#ifdef HAVE_GRAPHLCD
     clock_gettime(CLOCK_MONOTONIC, &last_update);
 #endif
 }
 
 gLCDDC::~gLCDDC()
 {
-#ifndef __sh__
+#ifndef HAVE_GRAPHLCD
 //konfetti: not sure why, but calling the destructor if external lcd (pearl)
 //is selected e2 crashes. this is also true if the destructor does not contain
 //any code !!!
@@ -62,7 +62,7 @@ void gLCDDC::exec(const gOpcode *o)
 	switch (o->opcode)
 	{
 	case gOpcode::flush:
-#ifdef __sh__    
+#ifdef HAVE_GRAPHLCD
 //        if (time_after(last_update, 1500) && update)
         if (update)
         {

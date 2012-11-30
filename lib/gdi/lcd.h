@@ -5,7 +5,7 @@
 #include <lib/gdi/esize.h>
 #include <lib/gdi/erect.h>
 
-#ifdef __sh__
+#ifdef HAVE_GRAPHLCD
 #include <glcdgraphics/bitmap.h>
 #include <glcdgraphics/glcd.h>
 #include <glcdgraphics/image.h>
@@ -13,6 +13,7 @@
 #include <glcddrivers/driver.h>
 #include <glcddrivers/drivers.h>
 #include <glcdgraphics/extformats.h>
+#include <byteswap.h>
 #endif
 
 #define LCD_CONTRAST_MIN 0
@@ -56,7 +57,7 @@ class eDBoxLCD: public eLCD
 	unsigned char inverted;
 	int is_oled;
 
-#ifdef __sh__
+#ifdef HAVE_GRAPHLCD
 	GLCD::cDriver * lcd;
     GLCD::cBitmap * bitmap;
     int displayNumber;

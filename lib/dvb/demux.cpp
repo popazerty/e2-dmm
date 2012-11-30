@@ -11,52 +11,7 @@
 		/* change every 1:FUZZING_PROPABILITY byte */
 #define FUZZING_PROPABILITY 100
 #endif
-
-#if HAVE_DVB_API_VERSION < 3
-#include <ost/dmx.h>
-
-#ifndef DMX_SET_NEGFILTER_MASK
-	#define DMX_SET_NEGFILTER_MASK   _IOW('o',48,uint8_t *)
-#endif
-
-#ifndef DMX_GET_STC
-	struct dmx_stc
-	{
-		unsigned int num;	/* input : which STC? O..N */
-		unsigned int base;	/* output: divisor for stc to get 90 kHz clock */
-		unsigned long long stc; /* output: src in 'base'*90 kHz units */
-	};
-	#define DMX_GET_STC		_IOR('o', 50, struct dmx_stc)
-#endif
-
-#else
-#include <linux/dvb/dmx.h>
-
-#define HAVE_ADD_PID
-
-#ifdef HAVE_ADD_PID
-
-#if HAVE_DVB_API_VERSION > 3
-#ifndef DMX_ADD_PID
-#define DMX_ADD_PID		_IOW('o', 51, __u16)
-#define DMX_REMOVE_PID		_IOW('o', 52, __u16)
-#endif
-#else
-#define DMX_ADD_PID              _IO('o', 51)
-#define DMX_REMOVE_PID           _IO('o', 52)
-
-typedef enum {
-	DMX_TAP_TS = 0,
-	DMX_TAP_PES = DMX_PES_OTHER, /* for backward binary compat. */
-} dmx_tap_type_t;
-#endif
-
-#endif
-
-#endif
-
 #include "crc32.h"
-
 #include <lib/base/eerror.h>
 #include <lib/base/filepush.h>
 #include <lib/dvb/idvb.h>
@@ -77,11 +32,7 @@ eDVBDemux::~eDVBDemux()
 int eDVBDemux::openDemux(void)
 {
 	char filename[128];
-#if HAVE_DVB_API_VERSION < 3
-	snprintf(filename, 128, "/dev/dvb/card%d/demux%d", adapter, demux);
-#else
 	snprintf(filename, 128, "/dev/dvb/adapter%d/demux%d", adapter, demux);
-#endif
 	return ::open(filename, O_RDWR);
 }
 
@@ -96,7 +47,6 @@ DEFINE_REF(eDVBDemux)
 
 RESULT eDVBDemux::setSourceFrontend(int fenum)
 {
-#if HAVE_DVB_API_VERSION >= 3
 	int fd = openDemux();
 	int n = DMX_SOURCE_FRONT0 + fenum;
 	int res = ::ioctl(fd, DMX_SET_SOURCE, &n);
@@ -106,20 +56,17 @@ RESULT eDVBDemux::setSourceFrontend(int fenum)
 		source = fenum;
 	::close(fd);
 	return res;
-#endif
 	return 0;
 }
 
 RESULT eDVBDemux::setSourcePVR(int pvrnum)
 {
-#if HAVE_DVB_API_VERSION >= 3
 	int fd = openDemux();
 	int n = DMX_SOURCE_DVR0 + pvrnum;
 	int res = ::ioctl(fd, DMX_SET_SOURCE, &n);
 	source = -1;
 	::close(fd);
 	return res;
-#endif
 	return 0;
 }
 
@@ -269,18 +216,10 @@ RESULT eDVBSectionReader::start(const eDVBSectionFilterMask &mask)
 		return -ENODEV;
 
 	notifier->start();
-#if HAVE_DVB_API_VERSION < 3
-	dmxSctFilterParams sct;
-#else
 	dmx_sct_filter_params sct;
-#endif
 	sct.pid     = mask.pid;
 	sct.timeout = 0;
-#if HAVE_DVB_API_VERSION < 3
-	sct.flags   = 0;
-#else
 	sct.flags   = DMX_IMMEDIATE_START;
-#endif
 #if !FUZZING
 	if (mask.flags & eDVBSectionFilterMask::rfCRC)
 	{
@@ -292,25 +231,12 @@ RESULT eDVBSectionReader::start(const eDVBSectionFilterMask &mask)
 	
 	memcpy(sct.filter.filter, mask.data, DMX_FILTER_SIZE);
 	memcpy(sct.filter.mask, mask.mask, DMX_FILTER_SIZE);
-#if HAVE_DVB_API_VERSION >= 3
 	memcpy(sct.filter.mode, mask.mode, DMX_FILTER_SIZE);
 	setBufferSize(8192*8);
-#endif
-	
 	res = ::ioctl(fd, DMX_SET_FILTER, &sct);
 	if (!res)
 	{
-#if HAVE_DVB_API_VERSION < 3
-		res = ::ioctl(fd, DMX_SET_NEGFILTER_MASK, mask.mode);
-		if (!res)
-		{
-			res = ::ioctl(fd, DMX_START, 0);
-			if (!res)
-				active = 1;
-		}
-#else
 		active = 1;
-#endif
 	}
 	return res;
 }
@@ -401,17 +327,9 @@ RESULT eDVBPESReader::start(int pid)
 		return -ENODEV;
 
 	m_notifier->start();
-
-#if HAVE_DVB_API_VERSION < 3
-	dmxPesFilterParams flt;
-	
-	flt.pesType = DMX_PES_OTHER;
-#else
 	dmx_pes_filter_params flt;
 	
 	flt.pes_type = DMX_PES_OTHER;
-#endif
-
 	flt.pid     = pid;
 	flt.input   = DMX_IN_FRONTEND;
 	flt.output  = DMX_OUT_TAP;
@@ -536,11 +454,7 @@ RESULT eDVBTSRecorder::start()
 
 	char filename[128];
 #ifndef HAVE_ADD_PID
-#if HAVE_DVB_API_VERSION < 3
-	snprintf(filename, 128, "/dev/dvb/card%d/dvr%d", m_demux->adapter, m_demux->demux);
-#else
 	snprintf(filename, 128, "/dev/dvb/adapter%d/dvr%d", m_demux->adapter, m_demux->demux);
-#endif
 	m_source_fd = ::open(filename, O_RDONLY);
 	
 	if (m_source_fd < 0)
@@ -565,13 +479,8 @@ RESULT eDVBTSRecorder::start()
 	setBufferSize(1024*1024);
 
 	dmx_pes_filter_params flt;
-#if HAVE_DVB_API_VERSION > 3
 	flt.pes_type = DMX_PES_OTHER;
 	flt.output  = DMX_OUT_TSDEMUX_TAP;
-#else
-	flt.pes_type = (dmx_pes_type_t)DMX_TAP_TS;
-	flt.output  = DMX_OUT_TAP;
-#endif
 	flt.pid     = i->first;
 	++i;
 	flt.input   = DMX_IN_FRONTEND;
@@ -726,16 +635,9 @@ RESULT eDVBTSRecorder::startPID(int pid)
 		return -1;
 	}
 
-#if HAVE_DVB_API_VERSION < 3
-	dmxPesFilterParams flt;
-	
-	flt.pesType = DMX_PES_OTHER;
-#else
 	dmx_pes_filter_params flt;
 	
 	flt.pes_type = DMX_PES_OTHER;
-#endif
-
 	flt.pid     = pid;
 	flt.input   = DMX_IN_FRONTEND;
 	flt.output  = DMX_OUT_TS_TAP;
@@ -752,12 +654,8 @@ RESULT eDVBTSRecorder::startPID(int pid)
 	m_pids[pid] = fd;
 #else
 	while(true) {
-#if HAVE_DVB_API_VERSION > 3
 		__u16 p = pid;
 		if (::ioctl(m_source_fd, DMX_ADD_PID, &p) < 0) {
-#else
-		if (::ioctl(m_source_fd, DMX_ADD_PID, pid) < 0) {
-#endif
 			perror("DMX_ADD_PID");
 			if (errno == EAGAIN || errno == EINTR) {
 				eDebug("retry!");
@@ -780,12 +678,8 @@ void eDVBTSRecorder::stopPID(int pid)
 	if (m_pids[pid] != -1)
 	{
 		while(true) {
-#if HAVE_DVB_API_VERSION > 3
 			__u16 p = pid;
 			if (::ioctl(m_source_fd, DMX_REMOVE_PID, &p) < 0) {
-#else
-			if (::ioctl(m_source_fd, DMX_REMOVE_PID, pid) < 0) {
-#endif
 				perror("DMX_REMOVE_PID");
 				if (errno == EAGAIN || errno == EINTR) {
 					eDebug("retry!");

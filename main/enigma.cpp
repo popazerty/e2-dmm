@@ -28,7 +28,7 @@
 #include <lib/python/python.h>
 
 #if defined(__sh__) // vfd class
-#include <lib/driver/vfd.h>  
+#include <lib/driver/vfd.h>
 
 #endif  
 #if defined(__sh__) // nits shm hack to behavior of e2 on the fly
@@ -38,7 +38,9 @@ char *shm = NULL;
 #include "bsod.h"
 #include "version_info.h"
 
+#ifndef ENABLE_LIBEPLAYER3
 #include <gst/gst.h>
+#endif
 
 #ifdef OBJECT_DEBUG
 int object_total_remaining;
@@ -144,8 +146,9 @@ int main(int argc, char **argv)
 #ifdef OBJECT_DEBUG
 	atexit(object_dump);
 #endif
-
+#ifndef ENABLE_LIBEPLAYER3
 	gst_init(&argc, &argv);
+#endif
 
 	// set pythonpath if unset
 	setenv("PYTHONPATH", eEnv::resolve("${libdir}/enigma2/python").c_str(), 0);
@@ -179,10 +182,10 @@ int main(int argc, char **argv)
 
 	dsk.setStyleID(0);
 
-#ifndef __sh__
-  	dsk_lcd.setStyleID(my_lcd_dc->size().width() == 96 ? 2 : 1);
-#else
+#ifdef HAVE_GRAPHLCD
   	dsk_lcd.setStyleID(my_lcd_dc->size().width() == 320 ? 1 : 2);
+#else
+  	dsk_lcd.setStyleID(my_lcd_dc->size().width() == 96 ? 2 : 1);
 #endif
 
 /*	if (double_buffer)
