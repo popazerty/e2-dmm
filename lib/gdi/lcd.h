@@ -13,7 +13,6 @@
 #include <glcddrivers/driver.h>
 #include <glcddrivers/drivers.h>
 #include <glcdgraphics/extformats.h>
-#include <byteswap.h>
 #endif
 
 #define LCD_CONTRAST_MIN 0

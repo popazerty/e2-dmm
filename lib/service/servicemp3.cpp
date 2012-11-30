@@ -1055,7 +1055,7 @@ RESULT eServiceMP3::setTrickmode(int trick)
 
 RESULT eServiceMP3::isCurrentlySeekable()
 {
-#ifdef __sh__
+#ifdef ENABLE_LIBEPLAYER3
 	return 3; /*Hellmaster1024: 1 for skipping 3 for skipping anf fast forward */
 #else
 	int ret = 3; // seeking and fast/slow winding possible
@@ -1150,7 +1150,7 @@ int eServiceMP3::getInfo(int w)
 	case sTagKeywords:
 	case sTagChannelMode:
 	case sUser+12:
-#if not defined(__sh__)
+#ifndef ENABLE_LIBEPLAYER3
 		return resIsString;
 #endif
 	case sTagTrackGain:
@@ -1214,7 +1214,7 @@ int eServiceMP3::getInfo(int w)
 
 std::string eServiceMP3::getInfoString(int w)
 {
-#ifdef ENABLE_LIBEPLAYER3
+#ifndef ENABLE_LIBEPLAYER3
 	if ( !m_stream_tags && w < sUser && w > 26 )
 		return "";
 	const gchar *tag = 0;

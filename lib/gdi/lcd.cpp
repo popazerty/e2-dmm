@@ -16,6 +16,19 @@
 #include <lib/base/init_num.h>
 #include <lib/gdi/glcddc.h>
 
+#ifdef HAVE_GRAPHLCD
+#include <glcdgraphics/bitmap.h>
+#include <glcdgraphics/glcd.h>
+#include <glcdgraphics/image.h>
+#include <glcddrivers/config.h>
+#include <glcddrivers/driver.h>
+#include <glcddrivers/drivers.h>
+#include <glcdgraphics/extformats.h>
+
+#include <byteswap.h>
+#endif
+
+
 eDBoxLCD *eDBoxLCD::instance;
 
 eLCD::eLCD()
@@ -52,7 +65,7 @@ void eLCD::unlock()
 	locked=0;
 }
 
-#ifndef __sh__    
+#ifndef HAVE_GRAPHLCD
 
 eDBoxLCD::eDBoxLCD()
 {

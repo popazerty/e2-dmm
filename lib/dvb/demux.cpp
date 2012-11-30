@@ -4,6 +4,22 @@
 #include <errno.h>
 #include <unistd.h>
 #include <signal.h>
+#include <linux/dvb/dmx.h>
+#define HAVE_ADD_PID
+#ifdef HAVE_ADD_PID
+#ifndef DMX_ADD_PID
+#define DMX_ADD_PID		_IOW('o', 51, __u16)
+#define DMX_REMOVE_PID		_IOW('o', 52, __u16)
+#endif
+#else
+#define DMX_ADD_PID              _IO('o', 51)
+#define DMX_REMOVE_PID           _IO('o', 52)
+
+typedef enum {
+	DMX_TAP_TS = 0,
+	DMX_TAP_PES = DMX_PES_OTHER, /* for backward binary compat. */
+} dmx_tap_type_t;
+#endif
 
 // #define FUZZING 1
 
